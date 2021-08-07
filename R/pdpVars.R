@@ -9,13 +9,15 @@
 #' @param vars The variables to plot (and their order), defaults to all variables other than response.
 #' @param pal A vector of colors to show predictions, for use with scale_fill_gradientn
 #' @param gridSize The size of the grid for evaluating the predictions.
-#' @param nmax Uses sample of nmax data rows for the pdp. Use all rows if NULL.
+#' @param nmax Uses sample of nmax data rows for the pdp.  Default is 500. Use all rows if NULL.
 #' @param class Category for classification, a factor level, or a number indicating which factor level.
 #' @param nIce Number of ice curves to be plotted, defaults to 30.
 #' @param predictFun Function of (fit, data) to extract numeric predictions from fit. Uses condvis2::CVpredict by default, which works for many fit classes.
 #' @param limits A vector determining the limits of the predicted values.
 #' @param colorVar Which variable to colour the predictions by.
 #' @param draw If FALSE, then the plot will not be drawn. Default is TRUE.
+#' @param probability if TRUE, then returns the partial dependence for classification on the probability scale. If
+#' FALSE (default), then the partial dependence is returned on a near logit scale.
 #' @return A grid displaying ICE curves and univariate partial dependence.
 #'
 #' @importFrom condvis2 CVpredict
@@ -46,10 +48,20 @@
 #'}
 #' @export
 
-pdpVars <- function(data, fit, response,
-                    vars = NULL, pal = rev(RColorBrewer::brewer.pal(11, "RdYlBu")),
-                    gridSize = 10, nmax = 500, class = 1,
-                    nIce = 30, predictFun = NULL, limits = NULL, colorVar = NULL, draw = TRUE) {
+pdpVars <- function(data,
+                    fit,
+                    response,
+                    vars = NULL,
+                    pal = rev(RColorBrewer::brewer.pal(11, "RdYlBu")),
+                    gridSize = 10,
+                    nmax = 500,
+                    class = 1,
+                    nIce = 30,
+                    predictFun = NULL,
+                    limits = NULL,
+                    colorVar = NULL,
+                    draw = TRUE,
+                    probability = FALSE) {
 
   data <- na.omit(data)
   if (is.null(nmax)) nmax <- nrow(data)
@@ -60,18 +72,42 @@ pdpVars <- function(data, fit, response,
   gridSize <- min(gridSize, nmax)
 
   classif <- is.factor(data[[response]]) | inherits(fit, "LearnerClassif")
+  if(classif){
+    if(probability){
+      legendName <- "y-hat\nprobability"
+    } else{
+      legendName <- "y-hat\nlogit"
+    }
+  } else{
+    legendName <- "y-hat"
+  }
+
+
   if (is.null(predictFun)) predictFun <- CVpredictfun(classif, class)
 
 
-  predData <- predictFun(fit, data)
+
+
+  if(classif){
+    predData <- predictFun(fit, data, prob = probability)
+  }else{
+    predData <- predictFun(fit, data)
+  }
+
 
   vars0 <- names(data)
   vars0 <- vars0[-match(response, vars0)]
   vars <- vars[vars %in% vars0]
   if (is.null(vars)) vars <- vars0
 
-  nIce <- min(nIce, nrow(data))
-  sice <- c(NA, sample(nrow(data), nIce)) # for use with iceplots
+  if(length(nIce) > 1){
+    nIce <- nIce[nIce <= nrow(data)]
+    sice <- c(NA, nIce)
+  } else {
+    nIce <- min(nIce, nrow(data))
+    sice <- c(NA, sample(nrow(data), nIce)) # for use with iceplots
+  }
+
 
 
   data$predData <- predData
@@ -82,7 +118,12 @@ pdpVars <- function(data, fit, response,
     pdplist1[[i]] <- px
   }
   pdplist1 <- bind_rows(pdplist1)
-  pdplist1$fit <- predictFun(fit, pdplist1)
+  if(classif){
+    pdplist1$fit <- predictFun(fit, pdplist1,  prob = probability)
+  }else{
+    pdplist1$fit <- predictFun(fit, pdplist1)
+  }
+
   pdplist1 <- split(pdplist1, pdplist1$.pid)
 
   names(pdplist1) <- vars
@@ -105,7 +146,7 @@ pdpVars <- function(data, fit, response,
         ggplot(aes(x = .data[[var]], y = fit)) +
         geom_line(aes(color = predData, group = .data[[".id"]])) +
         scale_color_gradientn(
-          name = "yhat", colors = pal, limits = limits, oob = scales::squish
+          name = legendName, colors = pal, limits = limits, oob = scales::squish
         )
     } else {
       p <- pdp1 %>%
@@ -115,7 +156,7 @@ pdpVars <- function(data, fit, response,
 
     p <- p +
       geom_line(data = aggr, size = 1, color = "black", lineend = "round", group = 1) +
-      theme_bw() + guides(fill = FALSE, color = FALSE) + ylab("   ") + ylim(limits)
+      theme_bw() + guides(fill = "none", color = "none") + ylab("   ") + ylim(limits)
     if (var == vars[[1]]) p <- p + ylab("pdp/ice")
     p
   }

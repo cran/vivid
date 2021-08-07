@@ -11,12 +11,14 @@
 #'  "pdp" (default), in which cases limits are calculated from the pdp, or "all", when limits are calculated from the observations and pdp.
 #'  Predictions outside fitlims are squished on the color scale.
 #' @param gridSize The size of the grid for evaluating the predictions.
-#' @param nmax Uses sample of nmax data rows for the pdp. Use all rows if NULL.
+#' @param nmax Uses sample of nmax data rows for the pdp.  Default is 500. Use all rows if NULL.
 #' @param class Category for classification, a factor level, or a number indicating which factor level.
 #' @param nIce Number of ice curves to be plotted, defaults to 30.
 #' @param comboImage If TRUE  draws pdp for mixed variable plots as an image, otherwise an interaction plot.
 #' @param predictFun Function of (fit, data) to extract numeric predictions from fit. Uses condvis2::CVpredict by default, which works for many fit classes.
 #' @param convexHull If TRUE, then the convex hull is computed and any points outside the convex hull are removed.
+#' @param probability if TRUE, then returns the partial dependence for classification on the probability scale. If
+#' FALSE (default), then the partial dependence is returned on a near logit scale.
 #' @return A pairs plot
 #'
 #' @importFrom condvis2 CVpredict
@@ -81,7 +83,9 @@ pdpPairs <- function(data,
                      nIce = 30,
                      comboImage = FALSE,
                      predictFun = NULL,
-                     convexHull = FALSE) {
+                     convexHull = FALSE,
+                     probability = FALSE) {
+
   data <- na.omit(data)
   if (is.null(nmax)) nmax <- nrow(data)
   nmax <- max(5, nmax)
@@ -91,17 +95,39 @@ pdpPairs <- function(data,
   gridSize <- min(gridSize, nmax)
 
   classif <- is.factor(data[[response]]) | inherits(fit, "LearnerClassif")
+
+  if(classif){
+    if(probability){
+      legendName <- "y-hat\nprobability"
+    } else{
+      legendName <- "y-hat\nlogit"
+    }
+  } else{
+    legendName <- "y-hat"
+  }
+
+
   if (is.null(predictFun)) predictFun <- CVpredictfun(classif, class)
 
-  predData <- predictFun(fit, data)
+  if(classif){
+  predData <- predictFun(fit, data, prob = probability)
+  }else{
+    predData <- predictFun(fit, data)
+  }
+
 
   vars0 <- names(data)
   vars0 <- vars0[-match(response, vars0)]
   vars <- vars[vars %in% vars0]
   if (is.null(vars)) vars <- vars0
 
-  nIce <- min(nIce, nrow(data))
-  sice <- c(NA, sample(nrow(data), nIce)) # for use with iceplots
+  if(length(nIce) > 1){
+    nIce <- nIce[nIce <= nrow(data)]
+    sice <- c(NA, nIce)
+  } else {
+    nIce <- min(nIce, nrow(data))
+    sice <- c(NA, sample(nrow(data), nIce)) # for use with iceplots
+  }
 
   # loop through vars and create a list of pdps
 
@@ -115,7 +141,13 @@ pdpPairs <- function(data,
     pdplist1[[i]] <- px
   }
   pdplist1 <- bind_rows(pdplist1)
-  pdplist1$fit <- predictFun(fit, pdplist1)
+  if(classif){
+      pdplist1$fit <- predictFun(fit, pdplist1, prob = probability)
+  }else{
+    pdplist1$fit <- predictFun(fit, pdplist1)
+  }
+
+
   pdplist1 <- split(pdplist1, pdplist1$.pid)
 
   names(pdplist1) <- vars
@@ -137,7 +169,12 @@ pdpPairs <- function(data,
   }
 
   pdplist <- bind_rows(pdplist)
-  pdplist$fit <- predictFun(fit, pdplist)
+
+  if(classif){
+    pdplist$fit <- predictFun(fit, pdplist, prob = probability)
+  }else{
+    pdplist$fit <- predictFun(fit, pdplist)
+  }
   pdplist <- split(pdplist, pdplist$.pid)
 
   for (i in 1:nrow(xyvarn)) {
@@ -168,7 +205,7 @@ pdpPairs <- function(data,
     pdp <- pdplist[[paste(vars[1], vars[2], sep = "pp")]]
     ggplot(data = pdp, aes(x = .data[[vars[1]]], y = .data[[vars[2]]])) +
       geom_tile(aes(fill = fit)) +
-      scale_fill_gradientn(name = "y-hat", colors = pal, limits = limits, oob = scales::squish)
+      scale_fill_gradientn(name = legendName, colors = pal, limits = limits, oob = scales::squish)
   }
 
   pdpc <- function(data, mapping, ...) {
@@ -190,7 +227,7 @@ pdpPairs <- function(data,
       ggplot(aes(x = .data[[var]], y = fit)) +
       geom_line(aes(color = predData, group = .data[[".id"]])) +
       scale_color_gradientn(
-        name = "y-hat", colors = pal, limits = limits, oob = scales::squish,
+        name = legendName, colors = pal, limits = limits, oob = scales::squish,
         guide = guide_colorbar(
           frame.colour = "black",
           ticks.colour = "black"
@@ -205,7 +242,7 @@ pdpPairs <- function(data,
     df <- data.frame(x = x, y = y)
     ggplot(df, aes(x = x, y = y, color = predData)) +
       geom_point(shape = 16, size = 1, show.legend = FALSE) +
-      scale_colour_gradientn(name = "y-hat", colors = pal, limits = limits, oob = scales::squish)
+      scale_colour_gradientn(name = legendName, colors = pal, limits = limits, oob = scales::squish)
   }
 
   dplotm <- function(data, mapping) {
@@ -217,7 +254,7 @@ pdpPairs <- function(data,
 
     ggplot(df, aes(x = x, y = y, color = predData)) +
       geom_jitter(shape = 16, size = 1, show.legend = FALSE, width = jitterx, height = jittery) +
-      scale_colour_gradientn(name = "y-hat", colors = pal, limits = limits, oob = scales::squish)
+      scale_colour_gradientn(name = legendName, colors = pal, limits = limits, oob = scales::squish)
   }
 
 
@@ -234,10 +271,10 @@ pdpPairs <- function(data,
     theme(
       panel.border = element_rect(colour = "black", fill = NA, size = 1),
       axis.line = element_line(),
-      axis.ticks = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 0),
-      axis.text.y = element_text(size = 0),
-      strip.text = element_text(face = "bold", colour = "red", size = 5)
+     # axis.ticks = element_blank(),
+      axis.text.x = element_text(angle = 0, hjust = 1, size = 6),
+      axis.text.y = element_text(size = 6),
+      strip.text = element_text(face = "bold", colour = "red", size = 7)
     )
 
 
@@ -327,3 +364,10 @@ pdp_data <- function(d, var, gridsize = 30, convexHull = FALSE) {
   rownames(dnew) <- NULL
   dnew
 }
+
+# convertScale <- function(x) {
+#   mEpsilon <- .Machine$double.eps
+#   log(ifelse(x > 0, x, mEpsilon)) -
+#     mean(log(ifelse(x > 0, x, mEpsilon))
+#     )
+# }

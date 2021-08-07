@@ -12,12 +12,14 @@
 #'  "pdp" (default), in which cases limits are calculated from the pdp, or "all", when limits are calculated from the observations and pdp
 #'  predictions outside fitlims are squished on the color scale.
 #' @param gridSize The size of the grid for evaluating the predictions.
-#' @param nmax Uses sample of nmax data rows for the pdp. Use all rows if NULL.
+#' @param nmax Uses sample of nmax data rows for the pdp.  Default is 500. Use all rows if NULL.
 #' @param class Category for classification, a factor level, or a number indicating which factor level.
 #' @param comboImage If TRUE  draws pdp for mixed variable plots as an image, otherwise an interaction plot.
 #' @param rug If TRUE adds rugs for the data to the pdp plots
 #' @param predictFun Function of (fit, data) to extract numeric predictions from fit. Uses condvis2::CVpredict by default, which works for many fit classes.
 #' @param convexHull If TRUE, then the convex hull is computed and any points outside the convex hull are removed.
+#' @param probability if TRUE, then returns the partial dependence for classification on the probability scale. If
+#' FALSE (default), then the partial dependence is returned on a near logit scale.
 #' @param ... passed on to zenplot
 #' @return A zenplot of partial dependence values.
 #'
@@ -60,10 +62,11 @@ pdpZen <- function(data,
                    comboImage = FALSE,
                    rug = TRUE,
                    predictFun = NULL,
-                  convexHull = FALSE,
+                   convexHull = FALSE,
+                   probability = FALSE,
                    ...) {
   if (!(requireNamespace("zenplots", quietly = TRUE))) {
-    message("Please install package zenplots to use this function. Note zenplots requires packge graph from Bioconductor, help for this function.")
+    message("Please install package zenplots to use this function. Note zenplots requires packge graph from Bioconductor, see help for zenplots for instructions.")
     return(invisible(NULL))
   }
 
@@ -76,8 +79,23 @@ pdpZen <- function(data,
   gridSize <- min(gridSize, nmax)
 
   classif <- is.factor(data[[response]]) | inherits(fit, "LearnerClassif")
+
+
   if (is.null(predictFun)) predictFun <- CVpredictfun(classif, class)
-  predData <- predictFun(fit, data)
+
+  if(classif){
+    predData <- predictFun(fit, data, prob = probability)
+  }else{
+    predData <- predictFun(fit, data)
+  }
+
+
+
+  if(!classif && probability){
+    warning("Probability scale is for classification only and will be ignored")
+  }
+
+
 
   vars <- names(data)
   vars <- vars[-match(response, vars)]
@@ -136,7 +154,11 @@ pdpZen <- function(data,
   }
 
   pdplist <- bind_rows(pdplist)
-  pdplist$fit <- predictFun(fit, pdplist)
+  if(classif){
+    pdplist$fit <- predictFun(fit, pdplist, prob = probability)
+  }else{
+    pdplist$fit <- predictFun(fit, pdplist)
+  }
   pdplist <- split(pdplist, pdplist$.pid)
 
   pdplist0 <- vector("list", nrow(zpairs))
@@ -183,15 +205,20 @@ pdpZen <- function(data,
     pdp <- pdplist[[z2index]]
     if (!is.null(pdp)) {
       if (!comboImage && is.factor(pdp[[vars[1]]]) + is.factor(pdp[[vars[2]]]) == 1) {
-        if (is.factor(pdp[[vars[1]]])) vars <- rev(vars)
+         flip <-  is.factor(pdp[[vars[1]]])
+         if (flip) vars <- rev(vars)
 
         p <- ggplot(data = pdp, aes(x = .data[[vars[1]]], y = fit, color = .data[[vars[2]]])) +
           geom_line() +
           geom_rug(data = data, sides = "b", aes(y = .data[["pred"]]))
+        # if (flip) p <- p+ coord_flip()
       } else {
         if (is.factor(pdp[[vars[1]]])) posx <- "jitter" else posx <- "identity"
         if (is.factor(pdp[[vars[2]]])) posy <- "jitter" else posy <- "identity"
+
+        num2d <- zargs$num/2
         p <- ggplot(data = pdp, aes(x = .data[[vars[1]]], y = .data[[vars[2]]])) +
+          #geom_tile(aes(fill = fit), show.legend = num2d == 1) +
           geom_tile(aes(fill = fit)) +
           scale_fill_gradientn(name = "y-hat", colors = pal, limits = limits, oob = scales::squish)
         if (rug) {
@@ -201,10 +228,13 @@ pdpZen <- function(data,
             scale_color_gradientn(name = "y-hat", colors = pal, limits = limits, oob = scales::squish)
         }
       }
+
       p <- p +
-        guides(fill = FALSE, color = FALSE) +
+        guides(fill = "none",  color = "none") +
         theme_bw() +
         theme(
+          #legend.position = "left",
+          #legend.key.size = unit(14, 'pt'),
           axis.line = element_blank(),
           axis.ticks = element_blank(),
           axis.text.x = element_blank(),
@@ -213,6 +243,8 @@ pdpZen <- function(data,
           axis.title.y = element_blank(),
           panel.border = element_rect(colour = "gray", fill = NA, size = 1.5)
         )
+
+
     } else {
       p <- ggplot() +
         theme(panel.background = element_blank())

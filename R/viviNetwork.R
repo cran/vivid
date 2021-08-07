@@ -57,7 +57,7 @@ viviNetwork <- function(mat,
     layout <- igraph::layout_in_circle
   }
 
-  df <- as.data.frame(mat)
+  df <- as.data.frame.vivid(mat)
 
   dfImp <- df[df$Measure == "Vimp", ]
 
@@ -162,25 +162,28 @@ viviNetwork <- function(mat,
       ylim(ylim) +
       geom_label(aes(label = dfImp$Variable_1),
         nudge_x = nudged[, 1], nudge_y = nudged[, 2],
-        hjust = "middle", vjust = "middle"
+        hjust = "middle", vjust = "middle",
+        label.size = NA
       ) +
       # theme(legend.text = element_text(size = 10)) +
       geom_point(aes(fill = dfImp$Value), size = impScaled * 2, colour = "transparent", shape = 21) +
       scale_fill_gradientn(
         name = "Vimp", colors = impPal, limits = impLimits,
         guide = guide_colorbar(
+          order = 2,
           frame.colour = "black",
           ticks.colour = "black"
-        )
+        ), oob = scales::squish
       ) +
       new_scale_fill() +
       geom_point(aes(x = 0, y = 0, fill = dfImp$Value), size = -1) +
       scale_fill_gradientn(
         name = "Vint", colors = intPal, limits = intLimits,
         guide = guide_colorbar(
+          order = 1,
           frame.colour = "black",
           ticks.colour = "black"
-        )
+        ), oob = scales::squish
       ) +
       theme_void() + theme(aspect.ratio = 1)
   )

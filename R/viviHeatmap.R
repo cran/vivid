@@ -69,7 +69,7 @@ viviHeatmap <- function(mat,
   # Set up plot -------------------------------------------------------
 
 
-  df <- as.data.frame(mat)
+  df <- as.data.frame.vivid(mat)
 
 
 
@@ -96,6 +96,7 @@ viviHeatmap <- function(mat,
     scale_fill_gradientn(
       colors = intPal, limits = limitsInt, name = "Vint",
       guide = guide_colorbar(
+        order = 1,
         frame.colour = "black",
         ticks.colour = "black"
       ), oob = scales::squish
@@ -105,6 +106,7 @@ viviHeatmap <- function(mat,
     scale_fill_gradientn(
       colors = impPal, limits = limitsImp, name = "Vimp",
       guide = guide_colorbar(
+        order = 2,
         frame.colour = "black",
         ticks.colour = "black"
       ), oob = scales::squish
