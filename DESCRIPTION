@@ -1,6 +1,6 @@
 Package: vivid
 Title: Variable Importance and Variable Interaction Displays
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person(given = "Alan", family = "Inglis", email = "alan.inglis@mu.ie", role = c("aut", "cre")),
     person(given = "Andrew", family = "Parnell", email = "andrew.parnell@mu.ie", role = "aut"),
@@ -19,10 +19,10 @@ VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2021-08-07 18:08:54 UTC; alaninglis
+Packaged: 2021-08-10 11:51:00 UTC; alaninglis
 Author: Alan Inglis [aut, cre],
   Andrew Parnell [aut],
   Catherine Hurley [aut]
 Maintainer: Alan Inglis <alan.inglis@mu.ie>
 Repository: CRAN
-Date/Publication: 2021-08-07 18:30:02 UTC
+Date/Publication: 2021-08-21 01:30:02 UTC

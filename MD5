@@ -1,6 +1,6 @@
-801c9e50f3bad9ec2070e5611f81dce5 *DESCRIPTION
+07328d8ce9fafd3a1cdfa54f1abb76ed *DESCRIPTION
 bc65f2f670f7f78122e9cb097d4f9e22 *NAMESPACE
-323ca8372b922c5c6591c19988f3266b *NEWS.md
+576c09d56b0e1049bc09b8d1ce7857d3 *NEWS.md
 8655a6d289fd92910591642bbdfb03c0 *R/as.data.frame.vivid.R
 e10aaf25844826ed8dd449ac55b68705 *R/pdpPairs.R
 c2a99f5cdce7a73178eab8bc63476372 *R/pdpVars.R
@@ -29,7 +29,7 @@ d016c032cf0dc573b10105ab3b2ae152 *man/pdpVars.Rd
 690fb37260e10d3f3cba85553e0e10b8 *man/viviHeatmap.Rd
 71c6d6677b8be3dea3fdb6a9d0a5a128 *man/viviNetwork.Rd
 752b04d42f99a98105ebbee0049a59f7 *man/viviUpdate.Rd
-6cfbaf80f09de2ce2155fccba19db956 *man/vividReorder.Rd
+82d8d73e256dc4286a3bcf3fc2c4cfb2 *man/vividReorder.Rd
 911876c29a4b070c180298d2326da9b4 *man/zPath.Rd
 c57a705224b67852d59dd2796e8b43dc *tests/testthat.R
 e339f8d9f2f3da8bdf2c8a40707d8279 *tests/testthat/test_matrix.R
