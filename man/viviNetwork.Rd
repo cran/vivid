@@ -9,13 +9,14 @@ viviNetwork(
   intThreshold = NULL,
   intLims = NULL,
   impLims = NULL,
-  intPal = rev(colorspace::sequential_hcl(palette = "Blues 3", n = 100)),
-  impPal = rev(colorspace::sequential_hcl(palette = "Reds 3", n = 100)),
+  intPal = rev(colorspace::sequential_hcl(palette = "Purples 3", n = 100)),
+  impPal = rev(colorspace::sequential_hcl(palette = "Greens 3", n = 100)),
   removeNode = FALSE,
   layout = igraph::layout_in_circle,
   cluster = NULL,
   nudge_x = 0.05,
-  nudge_y = 0.03
+  nudge_y = 0.03,
+  edgeWidths = 1:4
 )
 }
 \arguments{
@@ -37,9 +38,11 @@ viviNetwork(
 
 \item{cluster}{Either a vector of cluster memberships for nodes or an igraph clustering function.}
 
-\item{nudge_x}{Nudge (centered) labels by this amount, outward horizontally}
+\item{nudge_x}{Nudge (centered) labels by this amount, outward horizontally.}
 
-\item{nudge_y}{Nudge (centered) labels by this amount, outward vertically}
+\item{nudge_y}{Nudge (centered) labels by this amount, outward vertically.}
+
+\item{edgeWidths}{A vector specifying the scaling of the edges for the displayed graph. Values must be positive.}
 }
 \value{
 A plot displaying interaction strength between variables on the edges and variable importance on the nodes.

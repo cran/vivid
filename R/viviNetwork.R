@@ -12,8 +12,9 @@
 #' @param removeNode If TRUE, then removes nodes with no connecting edges when thresholding interaction values.
 #' @param layout igraph layout function or a numeric matrix with two columns, one row per node. Defaults to igraph::layout_as_circle
 #' @param cluster Either a vector of cluster memberships for nodes or an igraph clustering function.
-#' @param nudge_x Nudge (centered) labels by this amount, outward horizontally
-#' @param nudge_y Nudge (centered) labels by this amount, outward vertically
+#' @param nudge_x Nudge (centered) labels by this amount, outward horizontally.
+#' @param nudge_y Nudge (centered) labels by this amount, outward vertically.
+#' @param edgeWidths A vector specifying the scaling of the edges for the displayed graph. Values must be positive.
 #'
 #' @return A plot displaying interaction strength between variables on the edges and variable importance on the nodes.
 #'
@@ -39,13 +40,14 @@ viviNetwork <- function(mat,
                         intThreshold = NULL,
                         intLims = NULL,
                         impLims = NULL,
-                        intPal = rev(colorspace::sequential_hcl(palette = "Blues 3", n = 100)),
-                        impPal = rev(colorspace::sequential_hcl(palette = "Reds 3", n = 100)),
+                        intPal = rev(colorspace::sequential_hcl(palette = "Purples 3", n = 100)),
+                        impPal = rev(colorspace::sequential_hcl(palette = "Greens 3", n = 100)),
                         removeNode = FALSE,
                         layout = igraph::layout_in_circle,
                         cluster = NULL,
                         nudge_x = .05,
-                        nudge_y = .03) {
+                        nudge_y = .03,
+                        edgeWidths = 1:4) {
 
 
 
@@ -85,6 +87,8 @@ viviNetwork <- function(mat,
 
   # Thresholding ------------------------------------------------------------
   dfInt1 <- dfInt
+
+  # thresholding
   if (!is.null(intThreshold)) {
     if (intThreshold > max(dfInt$Value) | intThreshold < min(dfInt$Value)) {
       warning("Interaction threshold value is outside range of interaction values and will be ignored")
@@ -133,7 +137,7 @@ viviNetwork <- function(mat,
   }
 
   edgeCols <- mapinto(dfInt1$Value, intLimits, intPal) # set edge cols
-  edgeWidthScaled <- mapinto(dfInt1$Value, intLimits, c(1:4)) # scaling for graphic
+  edgeWidthScaled <- mapinto(dfInt1$Value, intLimits, sort(edgeWidths)) # scaling for graphic
   impScaled <- mapinto(dfImp$Value, impLimits, c(1:5)) # scaling for graphic
 
   glayout[abs(glayout) < .0001] <- 0
@@ -165,7 +169,6 @@ viviNetwork <- function(mat,
         hjust = "middle", vjust = "middle",
         label.size = NA
       ) +
-      # theme(legend.text = element_text(size = 10)) +
       geom_point(aes(fill = dfImp$Value), size = impScaled * 2, colour = "transparent", shape = 21) +
       scale_fill_gradientn(
         name = "Vimp", colors = impPal, limits = impLimits,

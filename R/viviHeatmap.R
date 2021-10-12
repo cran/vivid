@@ -9,6 +9,8 @@
 #' @param intLims Specifies the fit range for the color map for interaction strength.
 #' @param impLims Specifies the fit range for the color map for importance.
 #' @param angle The angle to display the x-axis labels.
+#' @param border Logical. If TRUE then draw a black border around the diagonal elements.
+#' @param angle The angle to rotate the x-axis labels. Defaults to zero.
 #'
 #' @import ggplot2
 #' @importFrom ggnewscale new_scale_fill
@@ -28,11 +30,12 @@
 #' @export
 # Main plot function -----------------------------------------------------------
 viviHeatmap <- function(mat,
-                        intPal = rev(colorspace::sequential_hcl(palette = "Blues 3", n = 100)),
-                        impPal = rev(colorspace::sequential_hcl(palette = "Reds 3", n = 100)),
+                        intPal = rev(colorspace::sequential_hcl(palette = "Purples 3", n = 100)),
+                        impPal = rev(colorspace::sequential_hcl(palette = "Greens 3", n = 100)),
                         intLims = NULL,
                         impLims = NULL,
-                        angle = NULL) {
+                        border = FALSE,
+                        angle = 0) {
 
 
 
@@ -41,11 +44,6 @@ viviHeatmap <- function(mat,
 
   # get label names
   labelNames <- colnames(mat)
-
-  # set x-axis text angle
-  if (is.null(angle)) {
-    angle <- 0
-  }
 
   # Limits ------------------------------------------------------------------
 
@@ -64,6 +62,7 @@ viviHeatmap <- function(mat,
   } else {
     limitsInt <- intLims
   }
+
 
 
   # Set up plot -------------------------------------------------------
@@ -102,7 +101,9 @@ viviHeatmap <- function(mat,
       ), oob = scales::squish
     ) +
     new_scale_fill() +
-    geom_tile(data = dfImp, aes(fill = .data[["Value"]])) +
+    geom_tile(data = dfImp,
+              aes(fill = .data[["Value"]])
+             ) +
     scale_fill_gradientn(
       colors = impPal, limits = limitsImp, name = "Vimp",
       guide = guide_colorbar(
@@ -121,6 +122,12 @@ viviHeatmap <- function(mat,
     theme(axis.text = element_text(size = 10)) +
     theme(axis.text.x = element_text(angle = angle, hjust = 0)) +
     theme(aspect.ratio = 1)
+
+    if(border){
+         p$layers[[2]]$aes_params$colour = 'black'
+         p$layers[[2]]$aes_params$size = 0.2
+    }
+
 
   return(p)
 }
