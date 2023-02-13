@@ -1,10 +1,3 @@
-# vivid 0.2.2
+# vivid 0.2.5
 
-# NEWS UPDATES: 
-
-
-* changed color palettes
-* allow constant edge thickness in network plot
-* small bug fixes and changes
-
-
+* updated maintainer's email address
