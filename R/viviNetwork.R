@@ -26,13 +26,13 @@
 #' @importFrom grDevices rainbow
 #' @importFrom colorspace sequential_hcl
 #' @examples
-#'\donttest{
+#' \donttest{
 #' library(ranger)
 #' aq <- na.omit(airquality)
 #' rF <- ranger(Ozone ~ ., data = aq, importance = "permutation")
 #' myMat <- vivi(fit = rF, data = aq, response = "Ozone")
 #' viviNetwork(myMat)
-#'}
+#' }
 #' @export
 
 # Plotting Function -------------------------------------------------------
@@ -48,9 +48,6 @@ viviNetwork <- function(mat,
                         nudge_x = .05,
                         nudge_y = .03,
                         edgeWidths = 1:4) {
-
-
-
   nnodes <- nrow(mat)
   if (nnodes == 1) stop("Only one node provided, no graph drawn")
 
@@ -65,13 +62,18 @@ viviNetwork <- function(mat,
 
   dfInt <- df[df$Measure == "Vint", ]
   dfInt <- dfInt[-which(dfInt$Row < dfInt$Col), ]
+  dfInt <- dfInt[!is.na(dfInt$Value), ]
   dfInt <- dfInt[with(dfInt, order(Value)), ]
 
   # Limits ------------------------------------------------------------------
 
   # set the limits for importance
   if (is.null(impLims)) {
-    impLimits <- range(dfImp$Value)
+    impLimits <- range(dfImp$Value, na.rm = T)
+    if(impLimits[1] == impLimits[2]){
+      impLimits[1] <- impLimits[1]-(impLimits[1]/4)
+      impLimits[2] <- impLimits[2]+(impLimits[2]/4)
+    }
     impLimits <- range(labeling::rpretty(impLimits[1], impLimits[2]))
   } else {
     impLimits <- impLims
@@ -80,6 +82,10 @@ viviNetwork <- function(mat,
   # set the limits for interactions
   if (is.null(intLims)) {
     intLimits <- range(dfInt$Value)
+    if(intLimits[1] == intLimits[2]){
+      intLimits[1] <- intLimits[1]-(intLimits[1]/4)
+      intLimits[2] <- intLimits[2]+(intLimits[2]/4)
+    }
     intLimits <- range(labeling::rpretty(intLimits[1], intLimits[2]))
   } else {
     intLimits <- intLims
@@ -131,6 +137,7 @@ viviNetwork <- function(mat,
   if (r[2] == 0) glayout[, 2] <- seq(-1, 1, length.out = nrow(glayout))
 
   mapinto <- function(x, lims, v) {
+    x[is.na(x)] <- lims[1]
     x <- pmin(pmax(x, lims[1]), lims[2])
     i <- cut(x, breaks = seq(lims[1], lims[2], length = length(v) + 1), include.lowest = TRUE)
     v[i]
@@ -164,32 +171,14 @@ viviNetwork <- function(mat,
     ) +
       xlim(xlim) +
       ylim(ylim) +
-      geom_label(aes(label = dfImp$Variable_1), size = 4.5,
+      geom_label(aes(label = dfImp$Variable_1),
+        size = 4.5,
         nudge_x = nudged[, 1], nudge_y = nudged[, 2],
         hjust = "middle", vjust = "middle",
         label.size = NA
-      ) +
-      geom_point(aes(fill = dfImp$Value), size = impScaled * 2, colour = "transparent", shape = 21) +
-      scale_fill_gradientn(
-        name = "Vimp", colors = impPal, limits = impLimits,
-        guide = guide_colorbar(
-          order = 2,
-          frame.colour = "black",
-          ticks.colour = "black"
-        ), oob = scales::squish
-      ) +
-      new_scale_fill() +
-      geom_point(aes(x = 0, y = 0, fill = dfImp$Value), size = -1) +
-      scale_fill_gradientn(
-        name = "Vint", colors = intPal, limits = intLimits,
-        guide = guide_colorbar(
-          order = 1,
-          frame.colour = "black",
-          ticks.colour = "black"
-        ), oob = scales::squish
-      ) +
-      theme_void() + theme(aspect.ratio = 1)
+      )
   )
+
   if (!is.null(cluster)) {
     # add numeric vector to cluster by, else use igraph clustering
     if (!is.numeric(cluster)) {
@@ -207,5 +196,27 @@ viviNetwork <- function(mat,
       fill = colCluster
     )
   }
+  p <- p + geom_point(aes(fill = dfImp$Value), size = impScaled * 2, colour = "transparent", shape = 21) +
+    scale_fill_gradientn(
+      name = "Vimp", colors = impPal, limits = impLimits,
+      guide = guide_colorbar(
+        order = 2,
+        frame.colour = "black",
+        ticks.colour = "black"
+      ), oob = scales::squish
+    ) +
+    new_scale_fill() +
+    geom_point(aes(x = 0, y = 0, fill = dfImp$Value), size = -1) +
+    scale_fill_gradientn(
+      name = "Vint", colors = intPal, limits = intLimits,
+      guide = guide_colorbar(
+        order = 1,
+        frame.colour = "black",
+        ticks.colour = "black"
+      ), oob = scales::squish
+    ) +
+    theme_void() + theme(aspect.ratio = 1)
+
+
   p
 }

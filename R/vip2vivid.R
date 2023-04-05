@@ -1,7 +1,9 @@
 #' vip2vivid
 #'
-#'  @description Takes measured importance and interactions from the vip package and turns them into a matrix
-#'  which can be used for plotting. Accepts any of the variable importance methods supplied by vip.
+#' @description  Takes measured importance and interactions
+#' from the vip package and turns them into a matrix
+#' which can be used for plotting. Accepts any of the variable importance
+#' methods supplied by vip.
 #'
 #' @param importance Measured importance from the vip package using \code{vi} function.
 #' @param interaction Measured interaction from the vip package using \code{vint} function.
@@ -26,7 +28,6 @@
 #' @export
 
 vip2vivid <- function(importance, interaction, reorder = TRUE) {
-
   # Importance --------------------------------------------------------------
 
 
@@ -42,7 +43,7 @@ vip2vivid <- function(importance, interaction, reorder = TRUE) {
   # get interaction and make named vector
   interactionTibble <- interaction[, 1:2]
 
-  vars <- t(simplify2array(strsplit(as.character(interactionTibble[["Variables"]]), "*", fixed = T)))
+  vars <- t(simplify2array(strsplit(as.character(interactionTibble[["Variables"]]), "*", fixed = TRUE)))
   mat <- matrix(0, length(varNames), length(varNames)) # create matrix
   rownames(mat) <- colnames(mat) <- varNames # set names
   mat[vars] <- interactionTibble[["Interaction"]]
@@ -56,7 +57,7 @@ vip2vivid <- function(importance, interaction, reorder = TRUE) {
     mat <- vividReorder(mat)
   }
 
-  if(class(mat)[1] != "vivid"){
+  if (class(mat)[1] != "vivid") {
     class(mat) <- c("vivid", class(mat))
   }
 
