@@ -44,7 +44,7 @@ myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1)
 
 ## -----------------------------------------------------------------------------
 set.seed(1701)
-rf <- randomForest(y ~ ., data = myData, importance = TRUE)
+rf <- randomForest(y ~ ., data = myData)
 
 ## -----------------------------------------------------------------------------
 set.seed(1701)
@@ -52,39 +52,55 @@ viviRf  <- vivi(fit = rf,
                 data = myData, 
                 response = "y",
                 gridSize = 50,
-                importanceType = "%IncMSE",
+                importanceType = "agnostic",
                 nmax = 500,
                 reorder = TRUE,
-                class = 1,
                 predictFun = NULL,
-                numPerm = 4)
+                numPerm = 4,
+                showVimpError = FALSE)
 
-## -----------------------------------------------------------------------------
+## ----  out.width = '50%', out.height='50%', fig.align='center'----------------
 viviHeatmap(mat = viviRf)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 viviNetwork(mat = viviRf)
 
 ## -----------------------------------------------------------------------------
 viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = FALSE)
 viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 viviNetwork(mat = viviRf, 
             layout = cbind(c(1,1,1,1,2,2,2,2,2), c(1,2,4,5,1,2,3,4,5)))
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 set.seed(1701)
-viviNetwork(mat = viviRf, cluster = igraph::cluster_fast_greedy)
+# clustered and filtered network for rf
+intVals <- viviRf
+diag(intVals) <- NA 
 
-## -----------------------------------------------------------------------------
+
+# select VIVI values in top 20%
+impTresh <- quantile(diag(viviRf),.8)
+intThresh <- quantile(intVals,.8,na.rm=TRUE)
+sv <- which(diag(viviRf) > impTresh |
+              apply(intVals, 1, max, na.rm=TRUE) > intThresh)
+
+h <- hclust(-as.dist(viviRf[sv,sv]), method="single")
+
+viviNetwork(viviRf[sv,sv],
+            cluster = cutree(h, k = 3), # specify number of groups
+            layout = igraph::layout_as_star)
+
+## ---- out.width = '100%', out.height='50%', fig.align='center'----------------
 top5 <- colnames(viviRf)[1:5]
 pdpVars(data = myData,
         fit = rf,
         response = 'y',
-        vars = top5)
+        vars = top5,
+        nIce = 100)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '100%', out.height='70%', fig.align='center'----------------
 set.seed(1701)
 pdpPairs(data = myData, 
          fit =  rf, 
@@ -94,11 +110,11 @@ pdpPairs(data = myData,
          vars = c("x1", "x2", "x3", "x4", "x5"),
          nIce = 100)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 set.seed(1701)
 pdpZen(data = myData, fit = rf, response = "y", nmax = 500, gridSize = 10)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 set.seed(1701)
 pdpZen(data = myData, 
        fit = rf, 
@@ -107,7 +123,7 @@ pdpZen(data = myData,
        gridSize = 10, 
        zpath = c("x1", "x2", "x3", "x4", "x5"))
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 # set zpaths with different parameters
 intVals <- viviRf
 diag(intVals) <- NA
@@ -145,8 +161,27 @@ viviGBst <- vivi(fit = gbst,
                  gridSize = 50,
                  nmax = 500)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 viviHeatmap(mat = viviGBst)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  rfEmbedded <- randomForest(y ~ ., data = myData, importance = TRUE)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  viviRfEmbedded <- vivi(fit = rfEmbedded,
+#                         data = myData,
+#                         response = "y",
+#                         importanceType = "%IncMSE")
+
+## ---- eval = FALSE------------------------------------------------------------
+#  rang <- ranger(y~., data = myData, importance = 'impurity')
+
+## ---- eval = FALSE------------------------------------------------------------
+#  viviRangEmbedded <- vivi(fit = rang,
+#                           data = myData,
+#                           response = "y",
+#                           importanceType = "impurity")
 
 ## -----------------------------------------------------------------------------
 set.seed(1701)
@@ -162,11 +197,11 @@ viviClassif  <- vivi(fit = rfClassif,
                      reorder = TRUE,
                      class = "setosa")
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
 viviHeatmap(mat = viviClassif)
 viviNetwork(mat = viviClassif)
 
-## -----------------------------------------------------------------------------
+## ---- out.width = '100%', out.height='70%', fig.align='center'----------------
 set.seed(1701)
 pdpPairs(data = iris, 
          fit = rfClassif, 
