@@ -42,127 +42,160 @@ genFriedman <- function(noFeatures = 10,
 
 myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1)
 
-## -----------------------------------------------------------------------------
-set.seed(1701)
-rf <- randomForest(y ~ ., data = myData)
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  rf <- randomForest(y ~ ., data = myData)
 
-## -----------------------------------------------------------------------------
-set.seed(1701)
-viviRf  <- vivi(fit = rf, 
-                data = myData, 
-                response = "y",
-                gridSize = 50,
-                importanceType = "agnostic",
-                nmax = 500,
-                reorder = TRUE,
-                predictFun = NULL,
-                numPerm = 4,
-                showVimpError = FALSE)
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  viviRf  <- vivi(fit = rf,
+#                  data = myData,
+#                  response = "y",
+#                  gridSize = 50,
+#                  importanceType = "agnostic",
+#                  nmax = 500,
+#                  reorder = TRUE,
+#                  predictFun = NULL,
+#                  numPerm = 4,
+#                  showVimpError = FALSE)
 
-## ----  out.width = '50%', out.height='50%', fig.align='center'----------------
-viviHeatmap(mat = viviRf)
+## ---- eval = FALSE------------------------------------------------------------
+#  viviHeatmap(mat = viviRf)
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-viviNetwork(mat = viviRf)
+## ---- echo = F,  out.width = '100%'-------------------------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfheatmap.png")
 
-## -----------------------------------------------------------------------------
-viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = FALSE)
-viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
+## ---- eval = FALSE------------------------------------------------------------
+#  viviNetwork(mat = viviRf)
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-viviNetwork(mat = viviRf, 
-            layout = cbind(c(1,1,1,1,2,2,2,2,2), c(1,2,4,5,1,2,3,4,5)))
+## ---- echo = F,  out.width = '100%'-------------------------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnetwork.png")
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-set.seed(1701)
-# clustered and filtered network for rf
-intVals <- viviRf
-diag(intVals) <- NA 
+## ---- eval = FALSE------------------------------------------------------------
+#  viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = FALSE)
+#  viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
 
+## ---- echo = F,  out.width = '100%'-------------------------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_filter_comb1.png")
 
-# select VIVI values in top 20%
-impTresh <- quantile(diag(viviRf),.8)
-intThresh <- quantile(intVals,.8,na.rm=TRUE)
-sv <- which(diag(viviRf) > impTresh |
-              apply(intVals, 1, max, na.rm=TRUE) > intThresh)
+## ---- eval = FALSE------------------------------------------------------------
+#  viviNetwork(mat = viviRf,
+#              layout = cbind(c(1,1,1,1,2,2,2,2,2), c(1,2,4,5,1,2,3,4,5)))
 
-h <- hclust(-as.dist(viviRf[sv,sv]), method="single")
+## ---- echo = F,  out.width = '70%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_custom_layout.png")
 
-viviNetwork(viviRf[sv,sv],
-            cluster = cutree(h, k = 3), # specify number of groups
-            layout = igraph::layout_as_star)
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  # clustered and filtered network for rf
+#  intVals <- viviRf
+#  diag(intVals) <- NA
+#  
+#  
+#  # select VIVI values in top 20%
+#  impTresh <- quantile(diag(viviRf),.8)
+#  intThresh <- quantile(intVals,.8,na.rm=TRUE)
+#  sv <- which(diag(viviRf) > impTresh |
+#                apply(intVals, 1, max, na.rm=TRUE) > intThresh)
+#  
+#  h <- hclust(-as.dist(viviRf[sv,sv]), method="single")
+#  
+#  viviNetwork(viviRf[sv,sv],
+#              cluster = cutree(h, k = 3), # specify number of groups
+#              layout = igraph::layout_as_star)
 
-## ---- out.width = '100%', out.height='50%', fig.align='center'----------------
-top5 <- colnames(viviRf)[1:5]
-pdpVars(data = myData,
-        fit = rf,
-        response = 'y',
-        vars = top5,
-        nIce = 100)
+## ---- echo = F,  out.width = '80%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_cluster.png")
 
-## ---- out.width = '100%', out.height='70%', fig.align='center'----------------
-set.seed(1701)
-pdpPairs(data = myData, 
-         fit =  rf, 
-         response = "y", 
-         nmax = 500, 
-         gridSize = 10,         
-         vars = c("x1", "x2", "x3", "x4", "x5"),
-         nIce = 100)
+## ---- eval = FALSE------------------------------------------------------------
+#  top5 <- colnames(viviRf)[1:5]
+#  pdpVars(data = myData,
+#          fit = rf,
+#          response = 'y',
+#          vars = top5,
+#          nIce = 100)
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-set.seed(1701)
-pdpZen(data = myData, fit = rf, response = "y", nmax = 500, gridSize = 10)
+## ---- echo = F,  out.width = '100%', fig.align='center'-----------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfpdp.png")
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-set.seed(1701)
-pdpZen(data = myData, 
-       fit = rf, 
-       response = "y",
-       nmax = 500, 
-       gridSize = 10, 
-       zpath = c("x1", "x2", "x3", "x4", "x5"))
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  pdpPairs(data = myData,
+#           fit =  rf,
+#           response = "y",
+#           nmax = 500,
+#           gridSize = 10,
+#           vars = c("x1", "x2", "x3", "x4", "x5"),
+#           nIce = 100)
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-# set zpaths with different parameters
-intVals <- viviRf
-diag(intVals) <- NA
-intThresh <- quantile(intVals, .90, na.rm=TRUE)
-zpSw <- zPath(viv = viviRf, cutoff = intThresh, connect = FALSE, method = 'strictly.weighted')
+## ---- echo = F,  out.width = '80%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfGPGP_subset.png")
 
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  pdpZen(data = myData, fit = rf, response = "y", nmax = 500, gridSize = 10)
 
+## ---- echo = F,  out.width = '60%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_all.png")
 
-set.seed(1701)
-pdpZen(data = myData, 
-       fit = rf, 
-       response = "y",
-       nmax = 500, 
-       gridSize = 10, 
-       zpath = zpSw)
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  pdpZen(data = myData,
+#         fit = rf,
+#         response = "y",
+#         nmax = 500,
+#         gridSize = 10,
+#         zpath = c("x1", "x2", "x3", "x4", "x5"))
 
-## -----------------------------------------------------------------------------
-library("xgboost")
-gbst <- xgboost(data = as.matrix(myData[,1:9]),
-                label =  as.matrix(myData[,10]),
-                nrounds = 100,
-                verbose = 0)
+## ---- echo = F,  out.width = '70%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_subset.png")
 
-## -----------------------------------------------------------------------------
-# predict function for GBM
-pFun <- function(fit, data, ...) predict(fit, as.matrix(data[,1:9]))
+## ---- eval = FALSE------------------------------------------------------------
+#  # set zpaths with different parameters
+#  intVals <- viviRf
+#  diag(intVals) <- NA
+#  intThresh <- quantile(intVals, .90, na.rm=TRUE)
+#  zpSw <- zPath(viv = viviRf, cutoff = intThresh, connect = FALSE, method = 'strictly.weighted')
+#  
+#  
+#  
+#  set.seed(1701)
+#  pdpZen(data = myData,
+#         fit = rf,
+#         response = "y",
+#         nmax = 500,
+#         gridSize = 10,
+#         zpath = zpSw)
 
-set.seed(1701)
-viviGBst <- vivi(fit = gbst,
-                 data = myData,
-                 response = "y",
-                 reorder = FALSE,
-                 normalized = FALSE,
-                 predictFun = pFun,
-                 gridSize = 50,
-                 nmax = 500)
+## ---- echo = F,  out.width = '70%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_SW.png")
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-viviHeatmap(mat = viviGBst)
+## ---- eval = FALSE------------------------------------------------------------
+#  library("xgboost")
+#  gbst <- xgboost(data = as.matrix(myData[,1:9]),
+#                  label =  as.matrix(myData[,10]),
+#                  nrounds = 100,
+#                  verbose = 0)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  # predict function for GBM
+#  pFun <- function(fit, data, ...) predict(fit, as.matrix(data[,1:9]))
+#  
+#  set.seed(1701)
+#  viviGBst <- vivi(fit = gbst,
+#                   data = myData,
+#                   response = "y",
+#                   reorder = FALSE,
+#                   normalized = FALSE,
+#                   predictFun = pFun,
+#                   gridSize = 50,
+#                   nmax = 500)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  viviHeatmap(mat = viviGBst)
+
+## ---- echo = F,  out.width = '100%', fig.align='center'-----------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/gbmheat.png")
 
 ## ---- eval = FALSE------------------------------------------------------------
 #  set.seed(1701)
@@ -183,32 +216,38 @@ viviHeatmap(mat = viviGBst)
 #                           response = "y",
 #                           importanceType = "impurity")
 
-## -----------------------------------------------------------------------------
-set.seed(1701)
-rfClassif <- ranger(Species~ ., data = iris, probability = T, 
-                    importance = "impurity")
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  rfClassif <- ranger(Species~ ., data = iris, probability = T,
+#                      importance = "impurity")
+#  
+#  set.seed(101)
+#  viviClassif  <- vivi(fit = rfClassif,
+#                       data = iris,
+#                       response = "Species",
+#                       gridSize = 10,
+#                       nmax = 50,
+#                       reorder = TRUE,
+#                       class = "setosa")
 
-set.seed(101)
-viviClassif  <- vivi(fit = rfClassif, 
-                     data = iris, 
-                     response = "Species",
-                     gridSize = 10,
-                     nmax = 50,
-                     reorder = TRUE,
-                     class = "setosa")
+## ---- eval = FALSE------------------------------------------------------------
+#  viviHeatmap(mat = viviClassif)
+#  viviNetwork(mat = viviClassif)
 
-## ---- out.width = '50%', out.height='50%', fig.align='center'-----------------
-viviHeatmap(mat = viviClassif)
-viviNetwork(mat = viviClassif)
+## ---- echo = F,  out.width = '100%', fig.align='center'-----------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/classifVIVI.png")
 
-## ---- out.width = '100%', out.height='70%', fig.align='center'----------------
-set.seed(1701)
-pdpPairs(data = iris, 
-         fit = rfClassif, 
-         response = "Species",
-         class = "setosa",  
-         convexHull = T, 
-         gridSize = 10, 
-         nmax = 50) 
+## ---- eval = FALSE------------------------------------------------------------
+#  set.seed(1701)
+#  pdpPairs(data = iris,
+#           fit = rfClassif,
+#           response = "Species",
+#           class = "setosa",
+#           convexHull = T,
+#           gridSize = 10,
+#           nmax = 50)
+#  
 
+## ---- echo = F,  out.width = '80%', fig.align='center'------------------------
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/classifGPDP.png")
 

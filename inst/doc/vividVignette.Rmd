@@ -36,7 +36,7 @@ library(vivid)
   <!-- badges: end -->
   
   
-Variable importance (VImp), variable interaction measures (VInt) and partial dependence plots (PDPs) are important summaries in the interpretation of statistical and machine learning models. In this vignette we describe new visualization techniques for exploring these model summaries. We construct heatmap and graph-based displays showing variable importance and interaction jointly, which are carefully designed to highlight important aspects of the fit. We describe a new matrix-type layout showing all single and bivariate partial dependence plots, and an alternative layout based on graph Eulerians focusing on key subsets. Our new visualisations are model-agnostic and are applicable to regression and classification supervised learning settings. They enhance interpretation even in situations where the number of variables is large and the interaction structure complex. Our R package `vivid` (variable importance and variable interaction displays) provides an implementation. When referring to VImp and VInt together, we use the shorthand VIVI. 
+Variable importance (VImp), variable interaction measures (VInt) and partial dependence plots (PDPs) are important summaries in the interpretation of statistical and machine learning models. In this vignette we describe new visualization techniques for exploring these model summaries. We construct heatmap and graph-based displays showing variable importance and interaction jointly, which are carefully designed to highlight important aspects of the fit. We describe a new matrix-type layout showing all single and bivariate partial dependence plots, and an alternative layout based on graph Eulerians focusing on key subsets. Our new visualisations are model-agnostic and are applicable to regression and classification supervised learning settings. They enhance interpretation even in situations where the number of variables is large and the interaction structure complex. Our R package `vivid` (variable importance and variable interaction displays) provides an implementation. When referring to VImp and VInt together, we use the shorthand VIVI. For more information related to visualising variable importance and interactions in machine learning models see our published work^[Alan Inglis and Andrew Parnell and Catherine B. Hurley (2022) Visualizing Variable Importance and Variable Interaction Effects in Machine Learning Models. Journal of Computational and Graphical Statistics (3), pages 1-13].
 
 
 ## Install instructions
@@ -120,17 +120,18 @@ myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1)
 
 Here we fit the model. We create a random forest fit from the `randomForest` package. 
 
-```{r}
+```{r, eval = FALSE}
 set.seed(1701)
 rf <- randomForest(y ~ ., data = myData)
 ```
-Note that for a `randomForest` model, if `importance = TRUE`, then multiple importance metrics are returned. In order to choose a specific metric for use with `vivid`, it is necessary to specify one of the importance metrics returned by the random forest as the argument for the `importanceType` parameter in the `vivi` function (as shown below).
 
 ## vivi function 
 
 
 To utilize `vivid`, the initial step involves computing variable importance and interactions for a fitted model. The vivi function performs this calculation, producing a square, symmetrical matrix that contains variable importance on the diagonal and variable interactions on the off-diagonal. To calculate the pair-wise interaction strength interactions Friedman's model agnostic, unnormalized $H$-Statistic^[Friedman, J. H. and Popescu, B. E. (2008). “Predictive learning via rule ensembles.” The Annals of Applied Statistics. JSTOR, 916–54.] is used. 
 The unnormalized version of the $H$-statistic was chosen to have a more direct comparison of interaction effects across pairs of variables and the results of $H$ are on the scale of the response (for regression). For the importance, either a selected embedded importance measure can be used (as seen in section 4) or an agnostic permutation method^[Fisher A., Rudin C., Dominici F. (2018). All Models are Wrong but many are Useful: Variable Importance for Black-Box, Proprietary, or Misspecified Prediction Models, using Model Class Reliance. Arxiv.] can be selected. 
+
+
 
 
 The vivi function requires three inputs: a fitted machine learning model, a data frame used in the model's training, and the name of the response variable for the fit. The resulting matrix will have importance and interaction values for all variables in the data frame, excluding the response variable. By default, if no embedded variable importance method is available or selected, an agnostic permutation method is applied. For clarity, this is shown in the `importanceType = 'agnostic'` argument below. For an example of using embedded methods, see Section 4.
@@ -140,7 +141,7 @@ Any variables that are not used by the supplied model will have their importance
 This function works with multiple model fits and results in a matrix which can be supplied to the plotting functions. The predict function argument uses `condvis2::CVpredict` by default, which works for many fit classes. To see a description of all function arguments use: `?vivid::vivi()`
 
 
-```{r}
+```{r, eval = FALSE}
 set.seed(1701)
 viviRf  <- vivi(fit = rf, 
                 data = myData, 
@@ -156,8 +157,6 @@ viviRf  <- vivi(fit = rf,
 
 
 
-
-
 # Section 2: Visualizing the results
 
 NOTE: If viewing this vignette from the vivid CRAN page, then some
@@ -169,14 +168,17 @@ The `viviHeatmap` function generates a heatmap that displays variable importance
 
 The `impLims` and `intLims` arguments determine the range of importance and interaction values that will be assigned colors. If these arguments are not provided, the default values will be calculated based on the minimum and maximum VIVI values in the `vivid` matrix. If any importance or interaction values fall outside of the specified limits, they will be squished to the closest limit. For brevity, only the required `vivid` matrix input is shown in the following code. To see a description of all the function arguments, see `?vivid::viviheatmap()`
 
-```{r,  out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 viviHeatmap(mat = viviRf)
+```
+
+
+```{r, echo = F,  out.width = '100%'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfheatmap.png")
 ```
 <center>
 <caption><span id="fig1:fig1">Figure 1: </span>Heatmap of a random forest fit displaying 2-way interaction strength on the off diagonal and individual variable importance on the diagonal. $x_1$ and $x_2$ show a strong interaction with $x_4$ being the most important for predicting $y$.</caption>
   </center>
-  
-  
   
 ### Network plot
   
@@ -184,8 +186,13 @@ With `viviNetwork`, a network graph is produced to visualize both importance and
 
 To begin we show the network using default settings.
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 viviNetwork(mat = viviRf)
+```
+
+
+```{r, echo = F,  out.width = '100%'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnetwork.png")
 ```
 <center>
 <caption><span id="fig2:fig2">Figure 2: </span>Network plot of a random forest fit displaying 2-way interaction strength and individual variable importance. $x_1$ and $x_2$ show a strong interaction with $x_4$ being the most important for predicting $y$.</caption>
@@ -193,9 +200,13 @@ viviNetwork(mat = viviRf)
 
 We can also filter out any interactions below a set value using the `intThreshold` argument. This can be useful when the number of variables included in the model is large or just to highlight the strongest interactions. By default, unconnected nodes are displayed, however, they can be removed by setting the argument `removeNode = T`. 
 
-```{r}
+```{r, eval = FALSE}
 viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = FALSE)
 viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
+```
+
+```{r, echo = F,  out.width = '100%'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_filter_comb1.png")
 ```
 <center>
 <caption><span id="fig3:fig3">Figure 3: </span>Network plot of a random forest fit displaying 2-way interaction strength and individual variable importance. In (a) a filtered network is shown displaying all interactions above 0.12, with all nodes shown. In (b) the unconnected nodes are removed.</caption>
@@ -204,9 +215,14 @@ viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
   
 The network plot offers multiple customization possibilities when it comes to displaying the network style plot through use of the `layout` argument. The default layout is a circle but the argument accepts any `igraph` layout function or a numeric matrix with two columns, one row per node. 
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 viviNetwork(mat = viviRf, 
             layout = cbind(c(1,1,1,1,2,2,2,2,2), c(1,2,4,5,1,2,3,4,5)))
+```
+
+
+```{r, echo = F,  out.width = '70%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_custom_layout.png")
 ```
 <center>
 <caption><span id="fig4:fig4">Figure 4: </span>Network plot of a random forest fit using custom layout.</caption>
@@ -214,7 +230,7 @@ viviNetwork(mat = viviRf,
   
 Finally, for the network plot to highlight any relationships in the model fit, we can cluster variables together using the `cluster` argument. This argument can either accept a vector of cluster memberships for nodes or an `igraph` package clustering function. In the following example, we manually select variables with VIVI values in the top 20\%. This selection allows us to focus only on the variables with the most impact on the response. The variables that remain are $x1$ to $x5$. We then perform a hierarchical clustering treating variable interactions as similarities, with the goal of grouping together high-interaction variables. Here we manually select the number of groups we want to show via the `cutree` function (which cuts clustered data into a desired number of groups). Finally we rearrange the layout using `igraph`. Here, `igraph::layout_as_star` places the first variable (deemed most relevant using the VIVI seriation process) at the center, which in Figure 5 emphasizes its key role as the most important predictor which also has the strongest interactions.
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 set.seed(1701)
 # clustered and filtered network for rf
 intVals <- viviRf
@@ -233,9 +249,16 @@ viviNetwork(viviRf[sv,sv],
             cluster = cutree(h, k = 3), # specify number of groups
             layout = igraph::layout_as_star)
 ```
+
+
+```{r, echo = F,  out.width = '80%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfnet_cluster.png")
+```
 <center>
 <caption><span id="fig5:fig5">Figure 5: </span>Clustered network plot of a random forest fit.</caption>
 </center>
+
+In Figure 5, after applying a hierarchical clustering, we can see the strongest mutual interactions have been grouped together. Namley; $x1$, $x2$, and $x4$. The remaining variables are individually clustered. 
   
   
 ### Univariate Partial Dependence Plot
@@ -244,7 +267,7 @@ The `pdpVars` function constructs a grid of univariate PDPs with ICE curves for 
 
 In the example below, we select the first five variables from our created `vivid` matrix to display and set the number of ICE curves to be displayed to be 100, via the `nIce` argument.
 
-```{r, out.width = '100%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 top5 <- colnames(viviRf)[1:5]
 pdpVars(data = myData,
         fit = rf,
@@ -252,7 +275,13 @@ pdpVars(data = myData,
         vars = top5,
         nIce = 100)
 ```
+
+
+```{r, echo = F,  out.width = '100%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfpdp.png")
+```
 <center>
+  
 <caption><span id="fig6:fig6">Figure 6: </span>Partial dependence plots (black line) with individual conditional expectation curves (colored lines) of a random forest fit on the Friedman data. The changing partial dependence and ICE curves of $x1$, $x2$, and $x4$ indicate that these variables have some impact on the response.</caption>
 </center>
   
@@ -260,7 +289,7 @@ pdpVars(data = myData,
 
 By employing a matrix layout, the pdpPairs function generates a generalized pairs partial dependence plot (GPDP) that encompasses univariate partial dependence (with ICE curves) on the diagonal, bivariate partial dependence on the upper diagonal, and a scatterplot of raw variable values on the lower diagonal, where all colours are assigned to points and ICE curves by the predicted $\hat{y}$ value. As with the univariate PDP, the fit, data frame used to train the model, and the name of the response variable are required inputs. For a full description of all the function arguments, see `?vivid::pdpPairs`. In the following example, we select the first five variables to display and set the number of shown  ICE curves to 100.
 
-```{r, out.width = '100%', out.height='70%', fig.align='center'}
+```{r, eval = FALSE}
 set.seed(1701)
 pdpPairs(data = myData, 
          fit =  rf, 
@@ -269,6 +298,11 @@ pdpPairs(data = myData,
          gridSize = 10,         
          vars = c("x1", "x2", "x3", "x4", "x5"),
          nIce = 100)
+```
+
+
+```{r, echo = F,  out.width = '80%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfGPGP_subset.png")
 ```
 <center>
 <caption><span id="fig7:fig7">Figure 7: </span>Filtered generalized pairs partial dependence plot for a random forest fit on the Friedman data. From both the univariate and bivariate PDPs, we can see that $x1$, $x2$, and $x4$ have an impact on the response.</caption>
@@ -280,9 +314,14 @@ The `pdpZen` function utilizes a space-saving technique based on graph Eulerians
 
 To begin, we show a ZPDP using all the variables in the model.
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 set.seed(1701)
 pdpZen(data = myData, fit = rf, response = "y", nmax = 500, gridSize = 10)
+```
+
+
+```{r, echo = F,  out.width = '60%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_all.png")
 ```
 <center>
 <caption><span id="fig8:fig8">Figure 8: </span>Zen partial dependence plot for the random forest fit on the Friedman data. Here we display all the variables used in the random forest model.</caption>
@@ -292,7 +331,7 @@ In Fig 8, we can see PDPs laid out in a zigzag structure, with the most influent
 
 
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 set.seed(1701)
 pdpZen(data = myData, 
        fit = rf, 
@@ -300,6 +339,11 @@ pdpZen(data = myData,
        nmax = 500, 
        gridSize = 10, 
        zpath = c("x1", "x2", "x3", "x4", "x5"))
+```
+
+
+```{r, echo = F,  out.width = '70%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_subset.png")
 ```
 <center>
 <caption><span id="fig9:fig9">Figure 9: </span>Zen partial dependence plot for the random forest fit on the Friedman data. Here we display only the first five variables.</caption>
@@ -312,7 +356,7 @@ You can choose between two methods when using the `zPath` function: `"greedy.wei
 
 
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 # set zpaths with different parameters
 intVals <- viviRf
 diag(intVals) <- NA
@@ -329,6 +373,11 @@ pdpZen(data = myData,
        gridSize = 10, 
        zpath = zpSw)
 ```
+
+
+```{r, echo = F,  out.width = '70%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/rfzen_SW.png")
+```
 <center>
 <caption><span id="fig10:fig10">Figure 10: </span>ZPDP for a random forest fit on the Friedman data. The sorting method is defined by the ‘strictly.weighted‘ method and is un-connected.</caption>
 </center>
@@ -340,7 +389,7 @@ We supply an internal custom predict function called `CVpredictfun` to both impo
 In situations where the fit class is not handled by `CVpredict`, supplying a custom predict function to the `vivi` function by way of the `predictFun` argument allows the agnostic VIVI values to be calculated. In the following, we provide a small example of using such a fit with `vivid` by using the `xgboost` package to create a gradient boosting machine (GBM). TO begin we build the model.
 
 
-```{r}
+```{r, eval = FALSE}
 library("xgboost")
 gbst <- xgboost(data = as.matrix(myData[,1:9]),
                 label =  as.matrix(myData[,10]),
@@ -350,7 +399,7 @@ gbst <- xgboost(data = as.matrix(myData[,1:9]),
 
 We then build the `vivid` matrix for the GBM fit using a custom predict function, which must be of the form given in the code snippet.
 
-```{r}
+```{r, eval = FALSE}
 # predict function for GBM
 pFun <- function(fit, data, ...) predict(fit, as.matrix(data[,1:9]))
 
@@ -368,12 +417,18 @@ viviGBst <- vivi(fit = gbst,
 
 From this we can now create our visualisations. For brevity, we only show the heatmap.
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 viviHeatmap(mat = viviGBst)
+```
+
+
+```{r, echo = F,  out.width = '100%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/gbmheat.png")
 ```
 <center>
 <caption><span id="fig11:fig11">Figure 11: </span>Heatmap for the GBM fit on the Friedman data.</caption>
 </center>
+
 
 # Section 4: Using different importance metrics
 
@@ -409,14 +464,14 @@ viviRangEmbedded <- vivi(fit = rang,
                          response = "y",
                          importanceType = "impurity")
 ```
-  
+
 # Section 5: Classification example
   
 In this section, we briefly describe how to apply the above visualisations to a classification example using the `iris` data set. 
 
 To begin we fit a `ranger` random forest model with "Species" as the response and create the vivi matrix setting the category for classification to be "setosa" using `class`.
 
-```{r}
+```{r, eval = FALSE}
 set.seed(1701)
 rfClassif <- ranger(Species~ ., data = iris, probability = T, 
                     importance = "impurity")
@@ -434,9 +489,14 @@ viviClassif  <- vivi(fit = rfClassif,
 
 Next we plot the heatmap and network plot of the iris data.
 
-```{r, out.width = '50%', out.height='50%', fig.align='center'}
+```{r, eval = FALSE}
 viviHeatmap(mat = viviClassif)
 viviNetwork(mat = viviClassif)
+```
+
+
+```{r, echo = F,  out.width = '100%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/classifVIVI.png")
 ```
 <center>
 <caption><span id="fig12:fig12">Figure 12: </span>Heatmap in (a) and Network plot in (b) of random forest fit on the iris data</caption>
@@ -444,7 +504,7 @@ viviNetwork(mat = viviClassif)
   
 As mentioned above, as PDPs are evaluated on a grid and can extrapolate where there is no data. To solve this issue we calculate a convex hull around the data and remove any points that fall outside the convex hull, as shown below.
 
-```{r, out.width = '100%', out.height='70%', fig.align='center'}
+```{r, eval = FALSE}
 set.seed(1701)
 pdpPairs(data = iris, 
          fit = rfClassif, 
@@ -455,6 +515,11 @@ pdpPairs(data = iris,
          nmax = 50) 
 
 ```
+
+
+```{r, echo = F,  out.width = '80%', fig.align='center'}
+knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/classifGPDP.png")
+```
 <center>
 <caption><span id="fig12:fig12">Figure 12: </span>GPDP of random forest fit on the iris data with extrapolated data removed.</caption>
 </center>
@@ -462,4 +527,3 @@ pdpPairs(data = iris,
   
   
   
-
