@@ -10,39 +10,32 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 library(vivid)
 
 ## ---- warning=FALSE, message=FALSE--------------------------------------------
-library(vivid) # for visualisations 
-library(randomForest) # for model fit
-library(ranger)       # for model fit
+library(vivid) 
 
 ## ---- messages = FALSE--------------------------------------------------------
 set.seed(101)
-genFriedman <- function(noFeatures = 10,
-                        noSamples = 100,
-                        sigma = 1
-) {
-  # Set Values
-  n <- noSamples # no of rows
-  p <- noFeatures # no of variables
-  e <- rnorm(n, sd = sigma)
+genFriedman <- function(noFeatures = 10, noSamples = 100, sigma = 1) {
   
+  # Create dataframe with named columns
+  df <- setNames(as.data.frame(matrix(runif(noSamples * noFeatures, 0, 1), nrow = noSamples), 
+                               stringsAsFactors = FALSE), 
+                 paste0("x", 1:noFeatures))
   
-  # Create matrix of values
-  xValues <- matrix(runif(n * p, 0, 1), nrow = n) # Create matrix
-  colnames(xValues) <- paste0("x", 1:p) # Name columns
-  df <- data.frame(xValues) # Create dataframe
+  # Equation: y = 10sin(πx1x2) + 20(x3−0.5)^2 + 10x4 + 5x5 + ε
   
+  df$y <- 10 * sin(pi * df$x1 * df$x2) + 
+    20 * (df$x3 - 0.5)^2 + 
+    10 * df$x4 + 
+    5 * df$x5 + 
+    rnorm(noSamples, sd = sigma) # error
   
-  # Equation:
-  # y = 10sin(πx1x2) + 20(x3−0.5)^2 + 10x4 + 5x5 + ε
-  y <- (10 * sin(pi * df$x1 * df$x2) + 20 * (df$x3 - 0.5)^2 + 10 * df$x4 + 5 *    df$x5 + e)
-  # Adding y to df
-  df$y <- y
-  df
+  return(df)
 }
 
-myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1)
+myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1) 
 
 ## ---- eval = FALSE------------------------------------------------------------
+#  library(randomForest) # for model fit
 #  set.seed(1701)
 #  rf <- randomForest(y ~ ., data = myData)
 
@@ -208,6 +201,7 @@ knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/mast
 #                         importanceType = "%IncMSE")
 
 ## ---- eval = FALSE------------------------------------------------------------
+#  library("ranger")
 #  rang <- ranger(y~., data = myData, importance = 'impurity')
 
 ## ---- eval = FALSE------------------------------------------------------------
@@ -250,4 +244,225 @@ knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/mast
 
 ## ---- echo = F,  out.width = '80%', fig.align='center'------------------------
 knitr::include_graphics("https://raw.githubusercontent.com/AlanInglis/vivid/master/vividVigplots/classifGPDP.png")
+
+## ---- eval = FALSE------------------------------------------------------------
+#  
+#  # Load libraries
+#  library("vivid")
+#  library("randomForest")
+#  
+#  # Create data based on the Friedman equation
+#  set.seed(101)
+#  genFriedman <- function(noFeatures = 10, noSamples = 100, sigma = 1) {
+#  
+#    # Create dataframe with named columns
+#    df <- setNames(as.data.frame(matrix(runif(noSamples * noFeatures, 0, 1), nrow = noSamples),
+#                                 stringsAsFactors = FALSE),
+#                   paste0("x", 1:noFeatures))
+#  
+#    # Equation: y = 10sin(πx1x2) + 20(x3−0.5)^2 + 10x4 + 5x5 + ε
+#  
+#    df$y <- 10 * sin(pi * df$x1 * df$x2) +
+#      20 * (df$x3 - 0.5)^2 +
+#      10 * df$x4 +
+#      5 * df$x5 +
+#      rnorm(noSamples, sd = sigma) # error
+#  
+#    return(df)
+#  }
+#  
+#  myData <- genFriedman(noFeatures = 9, noSamples = 350, sigma = 1)
+#  
+#  -------------------------------------------------------------------
+#  
+#  # Fit random forest using randomForest package
+#  set.seed(1701)
+#  rf <- randomForest(y ~ ., data = myData)
+#  
+#  -------------------------------------------------------------------
+#  
+#  # Run vivid
+#  set.seed(1701)
+#  viviRf  <- vivi(fit = rf,
+#                  data = myData,
+#                  response = "y",
+#                  gridSize = 50,
+#                  importanceType = "agnostic",
+#                  nmax = 500,
+#                  reorder = TRUE,
+#                  predictFun = NULL,
+#                  numPerm = 4,
+#                  showVimpError = FALSE)
+#  
+#  -------------------------------------------------------------------
+#  
+#  # Visualisations:
+#  
+#  # 1.0: Heatmap
+#  viviHeatmap(mat = viviRf)
+#  
+#  # 1.1: Heatmap with custom colour palettes and a small border around the diagonal importance values
+#  viviHeatmap(mat = viviRf,
+#              intPal = colorspace::sequential_hcl(palette = "Oslo", n = 100),
+#              impPal = rev(colorspace::sequential_hcl(palette = "Reds 3", n = 100)),
+#              border = T)
+#  
+#  # 2.0: Network
+#  viviNetwork(mat = viviRf)
+#  
+#  # 2.1: Network with interactions below 0.12 are filtered.
+#  # By default, unconnected nodes are displayed, however, they can be removed by setting `removeNode = T`
+#  viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = FALSE)
+#  viviNetwork(mat = viviRf, intThreshold = 0.12, removeNode = TRUE)
+#  
+#  # 2.3: Network clustered and with interactions thresholded
+#  set.seed(1701)
+#  # clustered and filtered network for rf
+#  intVals <- viviRf
+#  diag(intVals) <- NA
+#  
+#  
+#  # select VIVI values in top 20%
+#  impTresh <- quantile(diag(viviRf),.8)
+#  intThresh <- quantile(intVals,.8,na.rm=TRUE)
+#  sv <- which(diag(viviRf) > impTresh |
+#                apply(intVals, 1, max, na.rm=TRUE) > intThresh)
+#  
+#  h <- hclust(-as.dist(viviRf[sv,sv]), method="single")
+#  
+#  # plot
+#  viviNetwork(viviRf[sv,sv],
+#              cluster = cutree(h, k = 3), # specify number of groups
+#              layout = igraph::layout_as_star)
+#  
+#  # 3.0: PDP of the top 5 variables extracted from the vivi matrix and number of ICe curves set to 100
+#  top5 <- colnames(viviRf)[1:5]
+#  pdpVars(data = myData,
+#          fit = rf,
+#          response = 'y',
+#          vars = top5,
+#          nIce = 100)
+#  
+#  # 4.0: GPDP of the variables x1 to x5, with 100 ICE curves shown.
+#  set.seed(1701)
+#  pdpPairs(data = myData,
+#           fit =  rf,
+#           response = "y",
+#           nmax = 500,
+#           gridSize = 10,
+#           vars = c("x1", "x2", "x3", "x4", "x5"),
+#           nIce = 100)
+#  
+#  # 5.0: ZPDP of all variables
+#  set.seed(1701)
+#  pdpZen(data = myData, fit = rf, response = "y", nmax = 500, gridSize = 10)
+#  
+#  # 5.1: ZPDP where the `zpath` argument specifies the variables to be plotted. In this case, x1 to x5.
+#  set.seed(1701)
+#  pdpZen(data = myData,
+#         fit = rf,
+#         response = "y",
+#         nmax = 500,
+#         gridSize = 10,
+#         zpath = c("x1", "x2", "x3", "x4", "x5"))
+#  
+#  # 5.2: ZPDP with the zpaths set with different parameters using the `zPath` function.
+#  intVals <- viviRf
+#  diag(intVals) <- NA
+#  intThresh <- quantile(intVals, .90, na.rm=TRUE)
+#  zpSw <- zPath(viv = viviRf, cutoff = intThresh, connect = FALSE, method = 'strictly.weighted')
+#  
+#  set.seed(1701)
+#  pdpZen(data = myData,
+#         fit = rf,
+#         response = "y",
+#         nmax = 500,
+#         gridSize = 10,
+#         zpath = zpSw)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  library("vivid")
+#  library("xgboost")
+#  gbst <- xgboost(data = as.matrix(myData[,1:9]),
+#                  label =  as.matrix(myData[,10]),
+#                  nrounds = 100,
+#                  verbose = 0)
+#  
+#  # predict function for GBM
+#  pFun <- function(fit, data, ...) predict(fit, as.matrix(data[,1:9]))
+#  
+#  # run vivid
+#  set.seed(1701)
+#  viviGBst <- vivi(fit = gbst,
+#                   data = myData,
+#                   response = "y",
+#                   reorder = FALSE,
+#                   normalized = FALSE,
+#                   predictFun = pFun,
+#                   gridSize = 50,
+#                   nmax = 500)
+#  
+#  # plot heatmap
+#  viviHeatmap(mat = viviGBst)
+#  
+
+## ---- eval = FALSE------------------------------------------------------------
+#  library("vivid")
+#  library("randomForest")
+#  library("ranger")
+#  
+#  # randomForest
+#  # Note importance must be set to TRUE to use embedded importance scores.
+#  set.seed(1701)
+#  rfEmbedded <- randomForest(y ~ ., data = myData, importance = TRUE)
+#  
+#  # Using % increase in MSE as the importance metric in vivid
+#  viviRfEmbedded <- vivi(fit = rfEmbedded,
+#                         data = myData,
+#                         response = "y",
+#                         importanceType = "%IncMSE")
+#  
+#  # Plot Heatmap
+#  viviHeatmap(mat = viviRfEmbedded)
+#  
+#  # ranger
+#  # Note the importance metric is selected directly in ranger
+#  rang <- ranger(y~., data = myData, importance = 'impurity')
+#  
+#  # Run vivid
+#  viviRangEmbedded <- vivi(fit = rang,
+#                           data = myData,
+#                           response = "y",
+#                           importanceType = "impurity")
+#  
+#  # Plot Heatmap
+#  viviHeatmap(mat = viviRangEmbedded)
+
+## ---- eval = FALSE------------------------------------------------------------
+#  library("vivid")
+#  library("randomForest")
+#  
+#  set.seed(1701)
+#  rfClassif <- ranger(Species~ ., data = iris, probability = T,
+#                      importance = "impurity")
+#  
+#  set.seed(101)
+#  viviClassif  <- vivi(fit = rfClassif,
+#                       data = iris,
+#                       response = "Species",
+#                       gridSize = 10,
+#                       nmax = 50,
+#                       reorder = TRUE,
+#                       class = "setosa")
+#  
+#  viviHeatmap(mat = viviClassif)
+#  
+#  set.seed(1701)
+#  pdpPairs(data = iris,
+#           fit = rfClassif,
+#           response = "Species",
+#           class = "setosa",
+#           convexHull = T,
+#           gridSize = 10,
+#           nmax = 50)
 

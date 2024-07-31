@@ -64,22 +64,21 @@
 
 
 
-
 pdpPairs <- function(data,
-                     fit,
-                     response,
-                     vars = NULL,
-                     pal = rev(RColorBrewer::brewer.pal(11, "RdYlBu")),
-                     fitlims = "pdp",
-                     gridSize = 10,
-                     nmax = 500,
-                     class = 1,
-                     nIce = 30,
-                     colorVar = NULL,
-                     comboImage = FALSE,
-                     predictFun = NULL,
-                     convexHull = FALSE,
-                     probability = FALSE) {
+                      fit,
+                      response,
+                      vars = NULL,
+                      pal = rev(RColorBrewer::brewer.pal(11, "RdYlBu")),
+                      fitlims = "pdp",
+                      gridSize = 10,
+                      nmax = 500,
+                      class = 1,
+                      nIce = 30,
+                      colorVar = NULL,
+                      comboImage = FALSE,
+                      predictFun = NULL,
+                      convexHull = FALSE,
+                      probability = FALSE) {
   data <- na.omit(data)
   if (is.null(nmax)) nmax <- nrow(data)
   nmax <- max(5, nmax)
@@ -138,7 +137,15 @@ pdpPairs <- function(data,
   if (classif) {
     pdplist1$fit <- predictFun(fit, pdplist1, prob = probability)
   } else {
-    pdplist1$fit <- predictFun(fit, pdplist1)
+    # only for use with keras models
+    if (any(sapply(class(fit), function(x) grepl("keras", x)))) {
+      numberCol <- ncol(pdplist1)
+      pdplist1Keras <- pdplist1[,-c(numberCol-2, numberCol-1, numberCol)]
+      pdplist1$fit <- predictFun(fit, pdplist1Keras) # had to explicitly remove the extra colmns here
+    } else {
+      pdplist1$fit <- predictFun(fit, pdplist1[, 1:(ncol(pdplist1) - 3)])
+    }
+    #pdplist1$fit <- predictFun(fit, pdplist1)
   }
 
 
@@ -167,7 +174,15 @@ pdpPairs <- function(data,
   if (classif) {
     pdplist$fit <- predictFun(fit, pdplist, prob = probability)
   } else {
-    pdplist$fit <- predictFun(fit, pdplist)
+    # only for use with keras models
+    if (any(sapply(class(fit), function(x) grepl("keras", x)))) {
+      numberColumn <- ncol(pdplist)
+      pdplistKeras <- pdplist[,-c(numberColumn-2, numberColumn-1, numberColumn)]
+      pdplist$fit <- predictFun(fit, pdplistKeras) # had to explicitly remove the extra colmns here
+    } else {
+      pdplist$fit <- predictFun(fit, pdplist[, 1:(ncol(pdplist) - 3)])
+    }
+    #pdplist$fit <- predictFun(fit, pdplist)
   }
   pdplist <- split(pdplist, pdplist$.pid)
 
@@ -229,12 +244,14 @@ pdpPairs <- function(data,
             ticks.colour = "black"
           )
         ) +
-        geom_line(data = aggr, size = 1, color = "black", lineend = "round", group = 1)
+        geom_line(data = aggr,# size = 1,
+                  linewidth = 1, color = "black", lineend = "round", group = 1)
     } else {
       filter(pdp, .data[[".id"]] %in% sice) %>%
         ggplot(aes(x = .data[[var]], y = fit)) +
         geom_line(aes(color = .data[[colorVar]], group = .data[[".id"]])) +
-        geom_line(data = aggr, size = 1, color = "black", lineend = "round", group = 1)
+        geom_line(data = aggr, #size = 1,
+                  linewidth = 1, color = "black", lineend = "round", group = 1)
     }
   }
 
@@ -280,11 +297,11 @@ pdpPairs <- function(data,
   wlegend <- 1
 
   p <- ggpairs(data[vars],
-    upper = list(continuous = pdpnn, combo = if (comboImage) pdpnn else pdpc, discrete = pdpnn),
-    diag = list(continuous = ice, discrete = ice),
-    lower = list(continuous = dplotn, combo = dplotm, discrete = dplotm),
-    legend = wlegend,
-    cardinality_threshold = NULL
+               upper = list(continuous = pdpnn, combo = if (comboImage) pdpnn else pdpc, discrete = pdpnn),
+               diag = list(continuous = ice, discrete = ice),
+               lower = list(continuous = dplotn, combo = dplotm, discrete = dplotm),
+               legend = wlegend,
+               cardinality_threshold = NULL
   ) +
     theme_bw() +
     theme(
@@ -378,7 +395,11 @@ pdp_data <- function(d, var, gridsize = 30, convexHull = FALSE) {
     if (is.factor(pdpvar1)) dnew[[var[1]]] <- factor(dnew[[var[1]]], levels = levels(pdpvar1), ordered = is.ordered(pdpvar1))
     if (is.factor(pdpvar2)) dnew[[var[2]]] <- factor(dnew[[var[2]]], levels = levels(pdpvar2), ordered = is.ordered(pdpvar2))
   }
-  dnew$.id <- 1:nrow(d)
+  # making sure the repeats is consistent
+  n_repeats <- nrow(dnew) / nrow(d)
+  dnew$.id <- rep(1:nrow(d), times = ceiling(n_repeats))
+
+  # dnew$.id <- 1:nrow(d)
   rownames(dnew) <- NULL
   dnew
 }
