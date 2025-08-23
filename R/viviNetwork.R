@@ -1,3 +1,18 @@
+# helper (put in R/utils-deps.R)
+.need_pkgs <- function(pkgs, fun = "viviNetwork") {
+  miss <- pkgs[!vapply(pkgs, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))]
+  if (length(miss)) {
+    stop(
+      sprintf("%s() requires: %s. Install with install.packages(c(%s)).",
+              fun,
+              paste(miss, collapse = ", "),
+              paste(sprintf('"%s"', miss), collapse = ", ")),
+      call. = FALSE
+    )
+  }
+}
+
+
 #' viviNetwork
 #'
 #' @description Create a Network plot displaying variable importance
@@ -22,7 +37,6 @@
 #' @import ggplot2
 #' @importFrom GGally ggnet2
 #' @importFrom ggnewscale new_scale_fill
-#' @importFrom ggalt geom_encircle
 #' @importFrom grDevices rainbow
 #' @importFrom colorspace sequential_hcl
 #' @examples
@@ -115,7 +129,7 @@ viviNetwork <- function(mat,
   # Delete vertex that have no edges (if thresholding)
   if (removeNode) {
     rnode <- igraph::degree(g) == 0
-    g <- igraph::delete.vertices(g, rnode)
+    g <- igraph::delete_vertices(g, rnode)
     dfImp <- dfImp[!rnode, ]
     if (is.numeric(cluster)) cluster <- cluster[!rnode]
     if (is.numeric(layout)) layout <- layout[!rnode, , drop = F]
@@ -189,7 +203,7 @@ viviNetwork <- function(mat,
     colPal <- rainbow(length(unique(cluster)))
     colCluster <- colPal[cluster]
 
-    p <- p + geom_encircle(aes(group = cluster),
+    p <- p + geom_encircle_vivi(aes(group = cluster),
       spread = 0.01,
       alpha = 0.2,
       expand = 0.03,
